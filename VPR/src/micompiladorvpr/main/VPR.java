@@ -48,6 +48,8 @@ public class VPR extends javax.swing.JFrame {
         }
     }
     
+// --- ANALIZAR LÉXICO (CORREGIDO) ---
+// Método corregido para mostrar los tokens en la interfaz
     private void analizarLexico() throws IOException{
         int cont = 1;
         
@@ -68,86 +70,100 @@ public class VPR extends javax.swing.JFrame {
                 case Comillas:
                     resultado += "  <Comillas>\t\t" + lexer.lexeme + "\n";
                     break;
-                case Cadena:
-                    resultado += "  <Tipo de dato>\t" + lexer.lexeme + "\n";
+                // --- CAMBIOS CLAVE AQUI ---
+                case T_string: // Reemplaza al antiguo 'Cadena' o 'T_dato' para strings
+                    resultado += "  <Tipo de dato String>\t" + lexer.lexeme + "\n";
                     break;
-                case T_dato:
-                    resultado += "  <Tipo de dato>\t" + lexer.lexeme + "\n";
+                case T_int: // Reemplaza al antiguo 'T_dato' para enteros
+                    resultado += "  <Tipo de dato Entero>\t" + lexer.lexeme + "\n";
                     break;
+                case T_float: // Nuevo tipo
+                    resultado += "  <Tipo de dato Flotante>\t" + lexer.lexeme + "\n";
+                    break;
+                case T_bool: // Nuevo tipo
+                    resultado += "  <Tipo de dato Booleano>\t" + lexer.lexeme + "\n";
+                    break;
+                case Texto: // Nuevo token para cadenas completas "Hola Mundo"
+                    resultado += "  <Cadena de Texto>\t" + lexer.lexeme + "\n";
+                    break;
+                // --------------------------
                 case If:
-                    resultado += "  <Reservada if>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Reservada If>\t" + lexer.lexeme + "\n";
                     break;
                 case Else:
-                    resultado += "  <Reservada else>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Reservada Else>\t" + lexer.lexeme + "\n";
                     break;
                 case Do:
-                    resultado += "  <Reservada do>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Reservada Do>\t" + lexer.lexeme + "\n";
                     break;
                 case While:
-                    resultado += "  <Reservada while>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Reservada While>\t" + lexer.lexeme + "\n";
                     break;
                 case For:
-                    resultado += "  <Reservada while>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Reservada For>\t" + lexer.lexeme + "\n";
                     break;
                 case Igual:
-                    resultado += "  <Operador igual>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Operador Igual>\t" + lexer.lexeme + "\n";
                     break;
                 case Suma:
-                    resultado += "  <Operador suma>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Operador Suma>\t" + lexer.lexeme + "\n";
                     break;
                 case Resta:
-                    resultado += "  <Operador resta>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Operador Resta>\t" + lexer.lexeme + "\n";
                     break;
                 case Multiplicacion:
-                    resultado += "  <Operador multiplicacion>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Operador Multiplicacion>\t" + lexer.lexeme + "\n";
                     break;
                 case Division:
-                    resultado += "  <Operador division>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Operador Division>\t" + lexer.lexeme + "\n";
                     break;
                 case Op_logico:
-                    resultado += "  <Operador logico>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Operador Logico>\t" + lexer.lexeme + "\n";
                     break;
                 case Op_incremento:
-                    resultado += "  <Operador incremento>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Operador Incremento>\t" + lexer.lexeme + "\n";
                     break;
                 case Op_relacional:
-                    resultado += "  <Operador relacional>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Operador Relacional>\t" + lexer.lexeme + "\n";
                     break;
                 case Op_atribucion:
-                    resultado += "  <Operador atribucion>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Operador Atribucion>\t" + lexer.lexeme + "\n";
                     break;
                 case Op_booleano:
-                    resultado += "  <Operador booleano>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Valor Booleano>\t" + lexer.lexeme + "\n";
                     break;
                 case Parentesis_a:
-                    resultado += "  <Parentesis de apertura>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Parentesis Apertura>\t" + lexer.lexeme + "\n";
                     break;
                 case Parentesis_c:
-                    resultado += "  <Parentesis de cierre>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Parentesis Cierre>\t" + lexer.lexeme + "\n";
                     break;
                 case Llave_a:
-                    resultado += "  <Llave de apertura>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Llave Apertura>\t" + lexer.lexeme + "\n";
                     break;
                 case Llave_c:
-                    resultado += "  <Llave de cierre>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Llave Cierre>\t" + lexer.lexeme + "\n";
                     break;
                 case Corchete_a:
-                    resultado += "  <Corchete de apertura>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Corchete Apertura>\t" + lexer.lexeme + "\n";
                     break;
                 case Corchete_c:
-                    resultado += "  <Corchete de cierre>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Corchete Cierre>\t" + lexer.lexeme + "\n";
                     break;
                 case Main:
-                    resultado += "  <Reservada main>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Reservada Main>\t" + lexer.lexeme + "\n";
                     break;
                 case P_coma:
-                    resultado += "  <Punto y coma>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Punto y Coma>\t" + lexer.lexeme + "\n";
                     break;
                 case Identificador:
-                    resultado += "  <Identificador>\t\t" + lexer.lexeme + "\n";
+                    resultado += "  <Identificador>\t" + lexer.lexeme + "\n";
                     break;
                 case Numero:
                     resultado += "  <Numero>\t\t" + lexer.lexeme + "\n";
+                    break;
+                case Imprime:
+                    resultado += "  <Funcion Imprimir>\t" + lexer.lexeme + "\n";
                     break;
                 case ERROR:
                     resultado += "  <Simbolo no definido>\n";
@@ -158,7 +174,6 @@ public class VPR extends javax.swing.JFrame {
             }
         }
     }
-
     
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents

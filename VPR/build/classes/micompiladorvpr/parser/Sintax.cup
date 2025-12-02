@@ -1,161 +1,125 @@
 package micompiladorvpr.parser;
 
 import java_cup.runtime.Symbol;
-// Importamos el generador para usarlo en las acciones
 import micompiladorvpr.asm_compiler.GeneradorEnsamblador;
 
 parser code
 {:
     private Symbol s;
-    
-    public void syntax_error(Symbol s){
-        this.s = s;
-    }
-
-    public Symbol getS(){
-        return this.s;
-    }
+    public void syntax_error(Symbol s){ this.s = s; }
+    public Symbol getS(){ return this.s; }
 :};
 
-/* ----------------------------------------------------------------------
- * TERMINALES (Definimos tipos String para capturar los valores)
- * ---------------------------------------------------------------------- */
-terminal Linea, saltoL, Comillas, T_dato, Int, Cadena, If, Else, Do, While, For,
-    Igual, Suma, Resta, Multiplicacion, Division, Op_logico, Op_relacional,
-    Op_atribucion, Op_incremento, Op_booleano, Parentesis_a, Parentesis_c,
-    Llave_a, Llave_c, Corchete_a, Corchete_c, Main, P_coma, brek, cas, Puntos, LC, Punto,
-    Imprime, Lectura, retorno, formatoE, formatoC, nulo, Hashtag, Ilibrerias, LEntrada_Salida, ERROR;
+/* --- TERMINALES --- */
+terminal Linea, Comillas, T_int, T_float, T_string, T_char, T_bool, T_void;
+terminal If, Else, Do, While, For, Switch, Case, Default, Break, Main, Retorno;
+terminal Imprime, ImprimeLn, Lectura, Limpia;
+terminal F_pow, F_sqrt, F_abs, F_sin, F_cos;
+terminal Igual, Suma, Resta, Multiplicacion, Division, Modulo, Potencia;
+terminal Op_logico, Op_incremento, Op_relacional, Op_atribucion, Op_booleano;
+terminal Parentesis_a, Parentesis_c, Llave_a, Llave_c, Corchete_a, Corchete_c;
+terminal P_coma, Dos_puntos, Coma, Punto;
+terminal Hashtag, Ilibrerias, LEntrada_Salida, ERROR;
+terminal String Identificador, Numero, Texto;
 
-// Definimos estos como String para leer el texto del código (ej: "a", "155")
-terminal String Identificador, Numero;
+/* --- NO TERMINALES --- */
+non terminal INICIO, BLOQUE_CODIGO, LISTA_SENTENCIAS, SENTENCIA;
+non terminal DECLARACION, EXPRESION_A;
+non terminal SENTENCIA_IF, SENTENCIA_WHILE, SENTENCIA_DO_WHILE, SENTENCIA_FOR;
 
-/* ----------------------------------------------------------------------
- * NO TERMINALES
- * ---------------------------------------------------------------------- */
-non terminal INICIO, SENTENCIA, DECLARACION, DECLARACION_FOR, IF, IF_ELSE,
-    WHILE, DO_WHILE, FOR, SENTENCIA_BOOLEANA, SENTENCIA_FOR, 
-    expresion;
+/* --- PRECEDENCIA --- */
+precedence left Op_logico;
+precedence left Op_relacional;
+precedence left Suma, Resta;
+precedence left Multiplicacion, Division, Modulo;
+precedence right Potencia;
+precedence left If;
+precedence left Else;
 
 start with INICIO;
 
-/* ----------------------------------------------------------------------
- * REGLAS DE PRODUCCIÓN CON ACCIONES SEMÁNTICAS
- * ---------------------------------------------------------------------- */
+/* --- GRAMÁTICA --- */
 
+// Inicio del programa: main() { ... }
 INICIO ::= 
-    Hashtag Ilibrerias Op_relacional LEntrada_Salida Op_relacional 
-    Int Main Parentesis_a Parentesis_c Llave_a SENTENCIA Llave_c |
-    Main Parentesis_a Parentesis_c Llave_a SENTENCIA Llave_c | 
-    T_dato Main Parentesis_a Parentesis_c Llave_a SENTENCIA Llave_c
+    // Opción 1: int main() { ... }
+    T_int Main Parentesis_a Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c 
+    {: GeneradorEnsamblador.instancia.generarPie(); :} |
+    
+    // Opción 2: main() { ... } (Por defecto void/int)
+    Main Parentesis_a Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c 
+    {: GeneradorEnsamblador.instancia.generarPie(); :} |
+
+    // Opción 3: void main() { ... }
+    T_void Main Parentesis_a Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c
+    {: GeneradorEnsamblador.instancia.generarPie(); :}
+;
+
+// Lista de sentencias (Recursividad por la izquierda)
+LISTA_SENTENCIAS ::= 
+    LISTA_SENTENCIAS SENTENCIA | 
+    SENTENCIA
 ;
 
 SENTENCIA ::= 
-    SENTENCIA DECLARACION |
     DECLARACION |
-    SENTENCIA IF |
-    IF |
-    SENTENCIA IF_ELSE |
-    IF_ELSE |
-    SENTENCIA WHILE |
-    WHILE |
-    SENTENCIA DO_WHILE | 
-    DO_WHILE | 
-    SENTENCIA FOR |
-    FOR |
-    retorno Identificador P_coma |
-    SENTENCIA expresion | 
-    expresion             
-;
-
-// --- REGLAS DE DECLARACIÓN Y OPERACIONES ---
-
-DECLARACION ::= 
-    // int a;  -> Crea la variable en ASM
-    T_dato Identificador:id P_coma 
-    {: 
-        GeneradorEnsamblador.instancia.declararVariable(id); 
-    :} |
+    SENTENCIA_IF |
+    SENTENCIA_WHILE |
+    SENTENCIA_DO_WHILE |
+    SENTENCIA_FOR |
     
-    // int a = 5; -> Crea y asigna
-    T_dato Identificador:id Igual Numero:num P_coma 
-    {: 
-        GeneradorEnsamblador.instancia.declararVariable(id);
-        GeneradorEnsamblador.instancia.asignarValor(id, num);
-    :} |
-
-    // int c = a + b; -> Declaración con suma
-    T_dato Identificador:id Igual Identificador:op1 Suma Identificador:op2 P_coma
-    {:
-        GeneradorEnsamblador.instancia.declararVariable(id);
-        GeneradorEnsamblador.instancia.operacionAritmetica(id, op1, "+", op2);
-    :} |
-
-    // int c = a - b; -> Declaración con resta
-    T_dato Identificador:id Igual Identificador:op1 Resta Identificador:op2 P_coma
-    {:
-        GeneradorEnsamblador.instancia.declararVariable(id);
-        GeneradorEnsamblador.instancia.operacionAritmetica(id, op1, "-", op2);
-    :} |
-
-    // int c = a * b; -> Declaración con multiplicacion
-    T_dato Identificador:id Igual Identificador:op1 Multiplicacion Identificador:op2 P_coma
-    {:
-        GeneradorEnsamblador.instancia.declararVariable(id);
-        GeneradorEnsamblador.instancia.operacionAritmetica(id, op1, "*", op2);
-    :} |
-
-    // int c = a / b; -> Declaración con division
-    T_dato Identificador:id Igual Identificador:op1 Division Identificador:op2 P_coma
-    {:
-        GeneradorEnsamblador.instancia.declararVariable(id);
-        GeneradorEnsamblador.instancia.operacionAritmetica(id, op1, "/", op2);
-    :} |
-    
-    // printf(a); -> Imprimir variable
+    // Imprimir Variable: printf(variable);
     Imprime Parentesis_a Identificador:id Parentesis_c P_coma
-    {:
-        GeneradorEnsamblador.instancia.imprimirVariable(id);
-    :} |
-
-    // Reglas extras para mantener compatibilidad
-    T_dato Identificador Op_incremento P_coma | 
-    T_dato Op_incremento Identificador P_coma 
+    {: GeneradorEnsamblador.instancia.imprimirVariable(id); :} |
+    
+    // Asignación: a = 5 + b;
+    Identificador:id Igual EXPRESION_A P_coma
+    {: GeneradorEnsamblador.instancia.asignarDesdePila(id); :} |
+    
+    // Otros comandos
+    Limpia P_coma | Break P_coma | Retorno P_coma
 ;
 
-// Reglas de asignación posterior (a = 10; o c = a + b;)
-expresion::=
-    Identificador:id Igual Numero:num P_coma 
+// --- EXPRESIONES MATEMÁTICAS CON PILA ---
+EXPRESION_A ::=
+    EXPRESION_A Suma EXPRESION_A           {: GeneradorEnsamblador.instancia.operacionPila("+"); :} |
+    EXPRESION_A Resta EXPRESION_A          {: GeneradorEnsamblador.instancia.operacionPila("-"); :} |
+    EXPRESION_A Multiplicacion EXPRESION_A {: GeneradorEnsamblador.instancia.operacionPila("*"); :} |
+    EXPRESION_A Division EXPRESION_A       {: GeneradorEnsamblador.instancia.operacionPila("/"); :} |
+    Parentesis_a EXPRESION_A Parentesis_c |
+    
+    // Valores base
+    Identificador:id {: GeneradorEnsamblador.instancia.cargarValorEnPila(id); :} |
+    Numero:num       {: GeneradorEnsamblador.instancia.cargarValorEnPila(num); :}
+;
+
+// --- DECLARACIONES ---
+DECLARACION ::= 
+    // int a;
+    T_int Identificador:id P_coma 
+    {: GeneradorEnsamblador.instancia.declararVariable(id); :} |
+    
+    // int a = 5 + b;
+    T_int Identificador:id Igual EXPRESION_A P_coma 
     {: 
-        GeneradorEnsamblador.instancia.asignarValor(id, num);
+        GeneradorEnsamblador.instancia.declararVariable(id);
+        GeneradorEnsamblador.instancia.asignarDesdePila(id);
     :} |
     
-    Identificador:id Igual Identificador:op1 Suma Identificador:op2 P_coma
-    {: 
-        GeneradorEnsamblador.instancia.operacionAritmetica(id, op1, "+", op2);
-    :} |
-
-    Identificador:id Igual Identificador:op1 Resta Identificador:op2 P_coma
-    {: 
-        GeneradorEnsamblador.instancia.operacionAritmetica(id, op1, "-", op2);
-    :} |
-
-    Identificador:id Igual Identificador:op1 Multiplicacion Identificador:op2 P_coma
-    {: 
-        GeneradorEnsamblador.instancia.operacionAritmetica(id, op1, "*", op2);
-    :} |
-
-    Identificador:id Igual Identificador:op1 Division Identificador:op2 P_coma
-    {: 
-        GeneradorEnsamblador.instancia.operacionAritmetica(id, op1, "/", op2);
-    :}
+    // string s = "Hola"; (Usa el token Texto que incluye comillas)
+    T_string Identificador:id Igual Texto:val P_coma 
+    {: GeneradorEnsamblador.instancia.declararCadena(id, val); :} |
+    
+    // float f;
+    T_float Identificador:id P_coma
 ;
 
-// --- Estructuras de Control (Se mantienen vacías por ahora para no complicar el ASM) ---
-IF ::= If Parentesis_a SENTENCIA_BOOLEANA Parentesis_c Llave_a SENTENCIA Llave_c;
-SENTENCIA_BOOLEANA ::= Op_booleano | Identificador Op_relacional Identificador | Identificador Op_relacional Numero;
-IF_ELSE ::= If Parentesis_a SENTENCIA_BOOLEANA Parentesis_c Llave_a SENTENCIA Llave_c Else Llave_a SENTENCIA Llave_c;
-WHILE ::= While Parentesis_a SENTENCIA_BOOLEANA Parentesis_c Llave_a SENTENCIA Llave_c;
-DO_WHILE ::= Do Llave_a SENTENCIA Llave_c While Parentesis_a SENTENCIA_BOOLEANA Parentesis_c P_coma;
-FOR ::= For Parentesis_a SENTENCIA_FOR Parentesis_c Llave_a SENTENCIA Llave_c;
-SENTENCIA_FOR ::= T_dato Identificador Igual Numero P_coma SENTENCIA_BOOLEANA P_coma DECLARACION_FOR;
-DECLARACION_FOR ::= Identificador Op_atribucion Numero | Identificador Op_incremento;
+// --- ESTRUCTURAS DE CONTROL ---
+SENTENCIA_IF ::= 
+    If Parentesis_a EXPRESION_A Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c |
+    If Parentesis_a EXPRESION_A Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c Else Llave_a LISTA_SENTENCIAS Llave_c
+;
+
+SENTENCIA_WHILE ::= While Parentesis_a EXPRESION_A Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c;
+SENTENCIA_DO_WHILE ::= Do Llave_a LISTA_SENTENCIAS Llave_c While Parentesis_a EXPRESION_A Parentesis_c P_coma;
+SENTENCIA_FOR ::= For Parentesis_a Identificador Igual Numero P_coma EXPRESION_A P_coma Identificador Op_incremento Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c;

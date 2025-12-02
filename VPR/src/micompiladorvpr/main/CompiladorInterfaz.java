@@ -30,9 +30,9 @@ public class CompiladorInterfaz extends javax.swing.JFrame {
         initComponents();
     }
 
-        private void analizarLexico() throws IOException{
+// --- ANALIZAR LÉXICO (CORREGIDO) ---
+    private void analizarLexico() throws IOException{
         int cont = 1;
-        
         String expr = (String) txtResultado.getText();
         Lexer lexer = new Lexer(new StringReader(expr));
         String resultado = "LINEA " + cont + "\t\tSIMBOLO\n";
@@ -50,11 +50,14 @@ public class CompiladorInterfaz extends javax.swing.JFrame {
                 case Comillas:
                     resultado += "  <Comillas>\t\t" + lexer.lexeme + "\n";
                     break;
-                case Cadena:
-                    resultado += "  <Tipo de dato>\t" + lexer.lexeme + "\n";
+                case T_string: // ANTES ERA Cadena
+                    resultado += "  <Tipo de dato String>\t" + lexer.lexeme + "\n";
                     break;
-                case T_dato:
-                    resultado += "  <Tipo de dato>\t" + lexer.lexeme + "\n";
+                case T_int: // ANTES ERA T_dato
+                    resultado += "  <Tipo de dato Entero>\t" + lexer.lexeme + "\n";
+                    break;
+                case T_float:
+                    resultado += "  <Tipo de dato Flotante>\t" + lexer.lexeme + "\n";
                     break;
                 case If:
                     resultado += "  <Reservada if>\t" + lexer.lexeme + "\n";
@@ -69,7 +72,7 @@ public class CompiladorInterfaz extends javax.swing.JFrame {
                     resultado += "  <Reservada while>\t" + lexer.lexeme + "\n";
                     break;
                 case For:
-                    resultado += "  <Reservada while>\t" + lexer.lexeme + "\n";
+                    resultado += "  <Reservada for>\t" + lexer.lexeme + "\n";
                     break;
                 case Igual:
                     resultado += "  <Operador igual>\t" + lexer.lexeme + "\n";
@@ -140,7 +143,6 @@ public class CompiladorInterfaz extends javax.swing.JFrame {
             }
         }
     }
-
     
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
