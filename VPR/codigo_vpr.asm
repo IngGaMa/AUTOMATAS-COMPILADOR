@@ -8,78 +8,40 @@ includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\msvcrt.lib
 
 .data
-    formato_num DB "%d", 0Ah, 0
-    formato_string DB "%s", 0Ah, 0
-    titulo DB "=== PRUEBA DEL COMPILADOR VPR ===", 0
-    saludo DB "Hola usuario, calculando suma...", 0
-    n1 DD 0
-    n2 DD 0
-    suma DD 0
-    msgSuma DB "El resultado de la suma es:", 0
-    operacion DD 0
-    msgOp DB "Resultado operacion (150 - 10 * 5):", 0
+    formato_num DB "%d", 0
+    formato_string DB "%s", 0
+    formato_float DB "%d.%02d", 0
+    salto_linea DB 0Ah, 0
+    fmt_scan_int DB "%d", 0
+    fmt_scan_str DB "%s", 0
+    cmd_cls DB "cls", 0
+    signal_input_int DB "___INPUT_INT___ ", 0
+    signal_input_str DB "___INPUT_STR___ ", 0
+    signal_input_float DB "___INPUT_FLOAT___ ", 0
+    str_lit_0 DB "Probando nuevas funciones:", 0
+    str_lit_0_buffer DB 256 dup(0)
+    str_lit_1 DB "Esto es un println (salto de linea automatico).", 0
+    str_lit_1_buffer DB 256 dup(0)
+    numero DD 0
+    str_lit_2 DB "Escribe un numero y presiona Enter:", 0
+    str_lit_2_buffer DB 256 dup(0)
+    str_lit_3 DB "El numero leido es:", 0
+    str_lit_3_buffer DB 256 dup(0)
+    str_lit_4 DB "Fin del programa.", 0
+    str_lit_4_buffer DB 256 dup(0)
 .code
 main PROC
-    ; Imprimir titulo
-    invoke crt_printf, addr formato_string, addr titulo
-    ; Imprimir saludo
-    invoke crt_printf, addr formato_string, addr saludo
-    ; Push 150
-    MOV EAX, 150
-    PUSH EAX
-    ; Asignar a n1
-    POP EAX
-    MOV n1, EAX
-    ; Push 50
-    MOV EAX, 50
-    PUSH EAX
-    ; Asignar a n2
-    POP EAX
-    MOV n2, EAX
-    ; Push n1
-    MOV EAX, n1
-    PUSH EAX
-    ; Push n2
-    MOV EAX, n2
-    PUSH EAX
-    ; Operacion +
-    POP EBX
-    POP EAX
-    ADD EAX, EBX
-    PUSH EAX
-    ; Asignar a suma
-    POP EAX
-    MOV suma, EAX
-    ; Imprimir msgSuma
-    invoke crt_printf, addr formato_string, addr msgSuma
-    ; Imprimir suma
-    invoke crt_printf, addr formato_num, suma
-    ; Push n1
-    MOV EAX, n1
-    PUSH EAX
-    ; Push 10
-    MOV EAX, 10
-    PUSH EAX
-    ; Push 5
-    MOV EAX, 5
-    PUSH EAX
-    ; Operacion *
-    POP EBX
-    POP EAX
-    IMUL EAX, EBX
-    PUSH EAX
-    ; Operacion -
-    POP EBX
-    POP EAX
-    SUB EAX, EBX
-    PUSH EAX
-    ; Asignar a operacion
-    POP EAX
-    MOV operacion, EAX
-    ; Imprimir msgOp
-    invoke crt_printf, addr formato_string, addr msgOp
-    ; Imprimir operacion
-    invoke crt_printf, addr formato_num, operacion
+    invoke crt_printf, addr formato_string, addr str_lit_0
+    invoke crt_printf, addr formato_string, addr str_lit_1
+    invoke crt_printf, addr salto_linea
+    invoke crt_printf, addr formato_string, addr str_lit_2
+    invoke crt_printf, addr signal_input_int
+    invoke crt_scanf, addr fmt_scan_int, addr numero
+    invoke crt_printf, addr formato_string, addr str_lit_3
+    invoke crt_printf, addr formato_num, numero
+    invoke crt_printf, addr salto_linea
+    invoke crt_printf, addr formato_string, addr str_lit_4
+    invoke crt_printf, addr salto_linea
     invoke ExitProcess, 0
 main ENDP
 END main

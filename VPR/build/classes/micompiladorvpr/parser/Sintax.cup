@@ -3,123 +3,134 @@ package micompiladorvpr.parser;
 import java_cup.runtime.Symbol;
 import micompiladorvpr.asm_compiler.GeneradorEnsamblador;
 
-parser code
-{:
+parser code {:
     private Symbol s;
     public void syntax_error(Symbol s){ this.s = s; }
     public Symbol getS(){ return this.s; }
 :};
 
-/* --- TERMINALES --- */
+/* TERMINALES */
 terminal Linea, Comillas, T_int, T_float, T_string, T_char, T_bool, T_void;
-terminal If, Else, Do, While, For, Switch, Case, Default, Break, Main, Retorno;
-terminal Imprime, ImprimeLn, Lectura, Limpia;
-terminal F_pow, F_sqrt, F_abs, F_sin, F_cos;
-terminal Igual, Suma, Resta, Multiplicacion, Division, Modulo, Potencia;
+terminal If, Else, Do, While, For, Main, Retorno;
+terminal Switch, Case, Default, Break;
+terminal Imprime, ImprimeLn, Lectura, Limpia; // Nuevos: ImprimeLn, Lectura, Limpia
+terminal Igual, Suma, Resta, Multiplicacion, Division;
 terminal Op_logico, Op_incremento, Op_relacional, Op_atribucion, Op_booleano;
-terminal Parentesis_a, Parentesis_c, Llave_a, Llave_c, Corchete_a, Corchete_c;
-terminal P_coma, Dos_puntos, Coma, Punto;
+terminal Parentesis_a, Parentesis_c, Llave_a, Llave_c, Corchete_a, Corchete_c, P_coma, Dos_puntos, Coma, Punto;
 terminal Hashtag, Ilibrerias, LEntrada_Salida, ERROR;
 terminal String Identificador, Numero, Texto;
 
-/* --- NO TERMINALES --- */
-non terminal INICIO, BLOQUE_CODIGO, LISTA_SENTENCIAS, SENTENCIA;
-non terminal DECLARACION, EXPRESION_A;
+/* NO TERMINALES */
+non terminal INICIO, SENTENCIA, LISTA_SENTENCIAS, DECLARACION, EXPRESION_A;
 non terminal SENTENCIA_IF, SENTENCIA_WHILE, SENTENCIA_DO_WHILE, SENTENCIA_FOR;
+non terminal SENTENCIA_SWITCH, LISTA_CASOS, CASO;
+non terminal CONDICION;
 
-/* --- PRECEDENCIA --- */
+/* PRECEDENCIA */
 precedence left Op_logico;
 precedence left Op_relacional;
 precedence left Suma, Resta;
-precedence left Multiplicacion, Division, Modulo;
-precedence right Potencia;
+precedence left Multiplicacion, Division;
 precedence left If;
 precedence left Else;
 
 start with INICIO;
 
-/* --- GRAMÁTICA --- */
-
-// Inicio del programa: main() { ... }
 INICIO ::= 
-    // Opción 1: int main() { ... }
-    T_int Main Parentesis_a Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c 
-    {: GeneradorEnsamblador.instancia.generarPie(); :} |
-    
-    // Opción 2: main() { ... } (Por defecto void/int)
-    Main Parentesis_a Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c 
-    {: GeneradorEnsamblador.instancia.generarPie(); :} |
+    T_int Main Parentesis_a Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c |
+    Main Parentesis_a Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c |
+    T_void Main Parentesis_a Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c;
 
-    // Opción 3: void main() { ... }
-    T_void Main Parentesis_a Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c
-    {: GeneradorEnsamblador.instancia.generarPie(); :}
-;
-
-// Lista de sentencias (Recursividad por la izquierda)
-LISTA_SENTENCIAS ::= 
-    LISTA_SENTENCIAS SENTENCIA | 
-    SENTENCIA
-;
+LISTA_SENTENCIAS ::= LISTA_SENTENCIAS SENTENCIA | SENTENCIA;
 
 SENTENCIA ::= 
-    DECLARACION |
-    SENTENCIA_IF |
-    SENTENCIA_WHILE |
-    SENTENCIA_DO_WHILE |
-    SENTENCIA_FOR |
+    DECLARACION | SENTENCIA_IF | SENTENCIA_WHILE | SENTENCIA_DO_WHILE | SENTENCIA_FOR | SENTENCIA_SWITCH |
     
-    // Imprimir Variable: printf(variable);
+    // --- IMPRESIÓN (printf) ---
     Imprime Parentesis_a Identificador:id Parentesis_c P_coma
     {: GeneradorEnsamblador.instancia.imprimirVariable(id); :} |
+    Imprime Parentesis_a Texto:txt Parentesis_c P_coma
+    {: GeneradorEnsamblador.instancia.imprimirVariable(txt); :} |
+
+    // --- IMPRESIÓN CON SALTO (println) ---
+    ImprimeLn Parentesis_a Identificador:id Parentesis_c P_coma
+    {: GeneradorEnsamblador.instancia.imprimirVariableLn(id); :} |
+    ImprimeLn Parentesis_a Texto:txt Parentesis_c P_coma
+    {: GeneradorEnsamblador.instancia.imprimirVariableLn(txt); :} |
     
-    // Asignación: a = 5 + b;
+    // --- LECTURA (scanf) ---
+    Lectura Parentesis_a Identificador:id Parentesis_c P_coma
+    {: GeneradorEnsamblador.instancia.leerVariable(id); :} |
+
+    // --- LIMPIAR PANTALLA (clrscr) ---
+    Limpia P_coma
+    {: GeneradorEnsamblador.instancia.generarClrscr(); :} |
+
     Identificador:id Igual EXPRESION_A P_coma
     {: GeneradorEnsamblador.instancia.asignarDesdePila(id); :} |
     
-    // Otros comandos
-    Limpia P_coma | Break P_coma | Retorno P_coma
-;
+    Identificador:id Op_incremento P_coma 
+    {: GeneradorEnsamblador.instancia.incrementarVariable(id); :} |
+    
+    Break P_coma {: GeneradorEnsamblador.instancia.generarBreak(); :} |
+    Retorno P_coma;
 
-// --- EXPRESIONES MATEMÁTICAS CON PILA ---
+// EXPRESIONES
 EXPRESION_A ::=
     EXPRESION_A Suma EXPRESION_A           {: GeneradorEnsamblador.instancia.operacionPila("+"); :} |
     EXPRESION_A Resta EXPRESION_A          {: GeneradorEnsamblador.instancia.operacionPila("-"); :} |
     EXPRESION_A Multiplicacion EXPRESION_A {: GeneradorEnsamblador.instancia.operacionPila("*"); :} |
     EXPRESION_A Division EXPRESION_A       {: GeneradorEnsamblador.instancia.operacionPila("/"); :} |
     Parentesis_a EXPRESION_A Parentesis_c |
-    
-    // Valores base
     Identificador:id {: GeneradorEnsamblador.instancia.cargarValorEnPila(id); :} |
-    Numero:num       {: GeneradorEnsamblador.instancia.cargarValorEnPila(num); :}
-;
+    Numero:num       {: GeneradorEnsamblador.instancia.cargarValorEnPila(num); :};
 
-// --- DECLARACIONES ---
+// DECLARACIONES
 DECLARACION ::= 
-    // int a;
-    T_int Identificador:id P_coma 
-    {: GeneradorEnsamblador.instancia.declararVariable(id); :} |
-    
-    // int a = 5 + b;
+    T_int Identificador:id P_coma {: GeneradorEnsamblador.instancia.declararVariable(id); :} |
     T_int Identificador:id Igual EXPRESION_A P_coma 
-    {: 
-        GeneradorEnsamblador.instancia.declararVariable(id);
-        GeneradorEnsamblador.instancia.asignarDesdePila(id);
-    :} |
-    
-    // string s = "Hola"; (Usa el token Texto que incluye comillas)
+    {: GeneradorEnsamblador.instancia.declararVariable(id); GeneradorEnsamblador.instancia.asignarDesdePila(id); :} |
     T_string Identificador:id Igual Texto:val P_coma 
     {: GeneradorEnsamblador.instancia.declararCadena(id, val); :} |
-    
-    // float f;
-    T_float Identificador:id P_coma
-;
+    T_float Identificador:id Igual Numero:val P_coma
+    {: GeneradorEnsamblador.instancia.declararFloat(id, val); :} |
+    T_char Identificador:id Igual Texto:val P_coma
+    {: GeneradorEnsamblador.instancia.declararChar(id, val); :} |
+    T_bool Identificador:id Igual Op_booleano:val P_coma
+    {: GeneradorEnsamblador.instancia.declararBool(id, (String)val); :};
 
-// --- ESTRUCTURAS DE CONTROL ---
+// CONTROL DE FLUJO
+CONDICION ::= EXPRESION_A Op_relacional:op EXPRESION_A {: GeneradorEnsamblador.instancia.comparacion((String)op); :};
+
 SENTENCIA_IF ::= 
-    If Parentesis_a EXPRESION_A Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c |
-    If Parentesis_a EXPRESION_A Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c Else Llave_a LISTA_SENTENCIAS Llave_c
-;
+    If Parentesis_a CONDICION Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c 
+    {: GeneradorEnsamblador.instancia.finIf(); :} |
+    If Parentesis_a CONDICION Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c Else 
+    {: GeneradorEnsamblador.instancia.elseIf(); :} 
+    Llave_a LISTA_SENTENCIAS Llave_c
+    {: GeneradorEnsamblador.instancia.finIf(); :};
 
-SENTENCIA_WHILE ::= While Parentesis_a EXPRESION_A Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c;
-SENTENCIA_DO_WHILE ::= Do Llave_a LISTA_SENTENCIAS Llave_c While Parentesis_a EXPRESION_A Parentesis_c P_coma;
-SENTENCIA_FOR ::= For Parentesis_a Identificador Igual Numero P_coma EXPRESION_A P_coma Identificador Op_incremento Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c;
+SENTENCIA_WHILE ::= 
+    While 
+    {: GeneradorEnsamblador.instancia.iniciarWhile(); :}
+    Parentesis_a CONDICION Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c
+    {: GeneradorEnsamblador.instancia.terminarWhile(); :};
+
+SENTENCIA_DO_WHILE ::= 
+    Do Llave_a 
+    {: GeneradorEnsamblador.instancia.iniciarDo(); :}
+    LISTA_SENTENCIAS Llave_c While Parentesis_a CONDICION Parentesis_c P_coma
+    {: GeneradorEnsamblador.instancia.terminarDo(); :};
+
+SENTENCIA_FOR ::= For Parentesis_a Identificador Igual Numero P_coma CONDICION P_coma Identificador Op_incremento Parentesis_c Llave_a LISTA_SENTENCIAS Llave_c;
+
+SENTENCIA_SWITCH ::= 
+    Switch Parentesis_a Identificador Parentesis_c Llave_a 
+    {: GeneradorEnsamblador.instancia.iniciarSwitch(); :}
+    LISTA_CASOS Llave_c
+    {: GeneradorEnsamblador.instancia.terminarSwitch(); :};
+
+LISTA_CASOS ::= 
+    Case Numero Dos_puntos LISTA_SENTENCIAS Break P_coma LISTA_CASOS |
+    Default Dos_puntos LISTA_SENTENCIAS Break P_coma |
+    /* Vacio */ ;
